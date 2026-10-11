@@ -1,0 +1,25 @@
+\begin{table}[t]
+\centering
+\caption{Paired Wilcoxon signed-rank tests of per-series F1 against the best classical baseline of each dataset and setting (Holm-corrected over the three TSFM detectors).}
+\label{tab:stats}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrrrrr}
+\toprule
+Dataset & Setting & Detector & vs & Median diff & W/T/L & p & p (Holm) \\
+\midrule
+TCPD & default & Chronos-2 residual & BinSeg & -0.037 & 14/3/19 & 0.649 & 0.735 \\
+TCPD & default & TimesFM-2.5 residual & BinSeg & -0.063 & 12/1/23 & 0.368 & 0.735 \\
+TCPD & default & Chronos-2 embedding & BinSeg & -0.094 & 12/0/24 & 0.069 & 0.208 \\
+TCPD & oracle & Chronos-2 residual & BOCPD & -0.038 & 9/6/21 & 0.006 & 0.012 \\
+TCPD & oracle & TimesFM-2.5 residual & BOCPD & -0.033 & 11/5/20 & 0.016 & 0.016 \\
+TCPD & oracle & Chronos-2 embedding & BOCPD & -0.132 & 5/7/24 & 0.000 & 0.000 \\
+SKAB & default & Chronos-2 residual & BinSeg & -0.030 & 13/1/20 & 0.396 & 0.396 \\
+SKAB & default & TimesFM-2.5 residual & BinSeg & -0.097 & 10/1/23 & 0.033 & 0.098 \\
+SKAB & default & Chronos-2 embedding & BinSeg & 0.006 & 17/1/16 & 0.150 & 0.301 \\
+SKAB & oracle & Chronos-2 residual & BOCPD & -0.119 & 4/5/25 & 0.000 & 0.000 \\
+SKAB & oracle & TimesFM-2.5 residual & BOCPD & -0.213 & 1/7/26 & 0.000 & 0.000 \\
+SKAB & oracle & Chronos-2 embedding & BOCPD & -0.238 & 5/3/26 & 0.000 & 0.000 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}

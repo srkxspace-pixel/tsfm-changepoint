@@ -1,0 +1,10 @@
+dataset,dims,method,default_f1_mean,default_f1_median,default_cover_mean,default_cover_median,oracle_f1_mean,oracle_f1_median,oracle_cover_mean,oracle_cover_median,n_series
+skab,multi,chronos2_embedding,0.2724,0.25,0.5753,0.5539,0.4223,0.3636,0.7234,0.7402,34
+skab,multi,chronos2_residual,0.3027,0.2857,0.4817,0.4305,0.4766,0.4,0.6855,0.6761,34
+skab,multi,timesfm25_residual,0.2437,0.1952,0.4676,0.4748,0.4255,0.3333,0.6397,0.6376,34
+tcpd,multi,chronos2_embedding,0.583,0.4789,0.5392,0.4811,0.7063,0.6764,0.6593,0.6465,4
+tcpd,multi,chronos2_residual,0.5708,0.5969,0.4783,0.4526,0.9461,0.9486,0.7752,0.7767,4
+tcpd,multi,timesfm25_residual,0.5714,0.6365,0.4664,0.4502,0.9263,0.9293,0.7608,0.778,4
+tcpd,uni,chronos2_embedding,0.608,0.628,0.5665,0.5434,0.7432,0.75,0.6953,0.6782,32
+tcpd,uni,chronos2_residual,0.6804,0.7273,0.6242,0.6472,0.8131,0.84,0.7432,0.7582,32
+tcpd,uni,timesfm25_residual,0.65,0.6728,0.598,0.6116,0.8143,0.8692,0.724,0.7477,32

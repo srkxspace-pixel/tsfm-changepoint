@@ -1,0 +1,17 @@
+dataset,method,param,f1
+skab,chronos2_residual,32,0.2918962352941176
+skab,chronos2_residual,64,0.28824741176470586
+skab,chronos2_residual,128,0.3026725
+skab,chronos2_residual,256,0.3216927352941176
+skab,timesfm25_residual,32,0.24972626470588236
+skab,timesfm25_residual,64,0.20441020588235292
+skab,timesfm25_residual,128,0.24365605882352945
+skab,timesfm25_residual,256,0.2814040294117647
+tcpd,chronos2_residual,32,0.6533864166666666
+tcpd,chronos2_residual,64,0.6794806944444445
+tcpd,chronos2_residual,128,0.6682440833333333
+tcpd,chronos2_residual,256,0.6767653055555556
+tcpd,timesfm25_residual,32,0.6521615
+tcpd,timesfm25_residual,64,0.6394967222222222
+tcpd,timesfm25_residual,128,0.6412906111111112
+tcpd,timesfm25_residual,256,0.667787138888889

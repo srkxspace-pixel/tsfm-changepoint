@@ -1,0 +1,5 @@
+dataset,method,f1_default,f1_skip_first32,true_cp_in_first32
+skab,chronos2_residual,0.3027,0.3083,0.0
+skab,timesfm25_residual,0.2437,0.2502,0.0
+tcpd,chronos2_residual,0.6682,0.6274,0.4167
+tcpd,timesfm25_residual,0.6413,0.6182,0.4167

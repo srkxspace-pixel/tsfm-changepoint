@@ -1,0 +1,7 @@
+dataset,method,oracle_f1_full,oracle_f1_matched,n_configs_full
+skab,binseg,0.5381,0.5262,165.0
+skab,bocpd,0.6343,0.6003,501.0
+skab,pelt,0.5808,0.5723,83.0
+tcpd,binseg,0.8614,0.8554,165.0
+tcpd,bocpd,0.892,0.8712,501.0
+tcpd,pelt,0.8635,0.857,83.0

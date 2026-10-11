@@ -13,7 +13,8 @@ import pandas as pd  # noqa: E402
 
 from cpd import ROOT, load_config  # noqa: E402
 from cpd.data.loaders import load_processed, zscore  # noqa: E402
-from cpd.detectors.peaks import scores_to_cps  # noqa: E402
+from cpd.detectors.peaks import peak_curve, scores_to_cps  # noqa: E402
+from cpd.evaluation.metrics import score  # noqa: E402
 from cpd.evaluation.stats import holm, paired_test  # noqa: E402
 
 EVAL, TABLES, FIGS = ROOT / "results/eval", ROOT / "paper/tables", ROOT / "figures"
@@ -160,15 +161,44 @@ def fig_context(methods_tsfm):
     for ax, (ds, name) in zip(axes, DATASETS.items()):
         for m in [m for m in methods_tsfm if m.endswith("_residual")]:
             d = mean[(mean.dataset == ds) & (mean.method == m)]
-            ax.plot(d.param, d.f1, marker="o", markersize=4, linewidth=2, color=COLOR[m])
-            ax.annotate(LABEL[m], (d.param.iloc[-1], d.f1.iloc[-1]), xytext=(4, 0), textcoords="offset points",
-                        va="center", fontsize=7, color=INK)
+            ax.plot(d.param, d.f1, marker="o", markersize=4, linewidth=2, color=COLOR[m], label=LABEL[m])
         ax.set_xscale("log", base=2)
         ax.set_xticks(det["residual"]["context_lengths"], det["residual"]["context_lengths"])
         ax.set_xlabel("Context length L")
         ax.set_title(name, color=INK)
     axes[0].set_ylabel(f"Mean F1 (tau = {det['peaks']['default_tau']})")
+    axes[0].legend(frameon=False, loc="lower right")
     save_fig(fig, "fig4_context_length")
+
+
+def robustness(data):
+    """Two checks raised at the M5 review, computed from saved results only (no re-runs)."""
+    det, pk = load_config("detectors"), load_config("detectors")["peaks"]
+    # (1) oracle with a matched budget: classical grids cut to 40 evenly spaced configs (= TSFM residual grid)
+    g = pd.concat([pd.read_csv(p) for p in sorted((ROOT / "results/classical").glob("grid*.csv"))])
+    budget = len(det["residual"]["context_lengths"]) * len(pk["tau_grid"])
+    rows = []
+    for (sid, m), gg in g.groupby(["series_id", "method"]):
+        sub = gg.iloc[np.linspace(0, len(gg) - 1, budget).round().astype(int)]
+        rows.append(dict(dataset=sid.split("/")[0], method=m, oracle_f1_full=gg.f1.max(),
+                         oracle_f1_matched=sub.f1.max(), n_configs_full=len(gg)))
+    pd.DataFrame(rows).groupby(["dataset", "method"]).mean(numeric_only=True).round(4).reset_index()         .to_csv(EVAL / "oracle_matched_budget.csv", index=False)
+    # (2) residual detector without scores in the first 32 steps (tiny-context artefact check)
+    rows = []
+    for m in [m for m in TSFM if m.endswith("_residual")]:
+        for sid, s in data.items():
+            sc = np.load(ROOT / f"results/tsfm_raw/{m}/{sid.replace('/', '__')}.npz")[f"p{det['residual']['default_context']}"]
+            skip = sc.copy()
+            skip[:32] = 0
+            f = [score_f1(s, scores_to_cps(x, pk["default_tau"], pk["smooth"], pk["min_gap"])) for x in (sc, skip)]
+            rows.append(dict(dataset=s["dataset"], method=m, f1_default=f[0], f1_skip_first32=f[1],
+                             true_cp_in_first32=any(c < 32 for a in s["annotations"].values() for c in a)))
+    pd.DataFrame(rows).groupby(["dataset", "method"]).mean().round(4).reset_index()         .to_csv(EVAL / "early_context_check.csv", index=False)
+
+
+def score_f1(s, cps):
+    margins = load_config("datasets")["margin"]
+    return score(s["annotations"], cps, s["n_obs"], margins[s["dataset"]])[0]
 
 
 def fig_example(data, series_ids):
@@ -183,16 +213,22 @@ def fig_example(data, series_ids):
         cps = scores_to_cps(score, pk["default_tau"], pk["smooth"], pk["min_gap"])
         truth = sorted({c for a in s["annotations"].values() for c in a})
         top, bot = axes[0, j], axes[1, j]
-        top.plot(z, color=INK if z.shape[1] == 1 else MUTED, linewidth=0.8, alpha=1 if z.shape[1] == 1 else 0.5)
-        bot.plot(score, color=COLOR["timesfm25_residual"], linewidth=1.2)
+        offsets = np.arange(z.shape[1]) * 5.0           # stack channels so each stays readable
+        top.plot(z + offsets, color=INK, linewidth=0.6)
+        top.set_yticks([] if z.shape[1] > 1 else top.get_yticks())
+        rz = peak_curve(score, pk["smooth"])          # exactly the curve peak picking sees
+        bot.plot(rz, color=COLOR["timesfm25_residual"], linewidth=1.0)
+        bot.axhline(pk["default_tau"], color=MUTED, linewidth=0.8)
+        if rz.max() > 20:
+            bot.set_yscale("symlog", linthresh=10)
         for ax in (top, bot):
             for c in truth:
                 ax.axvline(c, color=MUTED, linestyle="--", linewidth=0.8)
-        bot.plot(cps, score[cps], "v", color=INK, markersize=5, linestyle="none")
-        top.set_title(f"{sid}  (dashed: annotated CPs)", color=INK)
+        bot.plot(cps, rz[cps], "v", color=INK, markersize=5, linestyle="none")
+        top.set_title(sid + (f" ({z.shape[1]} channels, stacked)" if z.shape[1] > 1 else ""), color=INK)
         bot.set_xlabel("time step")
     axes[0, 0].set_ylabel("z-scored value")
-    axes[1, 0].set_ylabel(f"TimesFM-2.5 residual score\n(L={L}; triangles: detected)")
+    axes[1, 0].set_ylabel("score (robust z)")
     save_fig(fig, "fig2_example")
 
 
@@ -212,6 +248,7 @@ def main():
         table_stats(ps, TSFM)
         fig_context(TSFM)
         fig_example(data, ["tcpd/nile", "skab/valve1_0"])   # fixed before seeing any TSFM result
+        robustness(data)
     print("tables:", sorted(p.name for p in TABLES.glob("*.tex")))
     print("figures:", sorted(p.name for p in FIGS.glob("*.png")))
 
