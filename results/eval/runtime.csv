@@ -1,7 +1,7 @@
 dataset,method,mean,median,max
-skab,binseg,0.2927,0.2683,0.4752
-skab,bocpd,0.5512,0.5145,0.7263
-skab,pelt,3.1813,2.9058,5.7595
+skab,binseg,0.3647,0.3052,1.0783
+skab,bocpd,0.698,0.5766,1.6415
+skab,pelt,2.9099,2.5926,6.629
 tcpd,binseg,0.0855,0.051,0.4346
 tcpd,bocpd,0.3325,0.1512,3.5996
 tcpd,pelt,0.4873,0.11,3.6182

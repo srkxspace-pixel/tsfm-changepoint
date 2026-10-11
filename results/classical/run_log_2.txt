@@ -33,3 +33,16 @@ skab/valve1_10               binseg   165 configs    27.2s
 skab/valve1_10               bocpd    501 configs   373.6s
 skab/valve1_14               pelt      83 configs   328.4s
 skab/valve1_14               binseg   165 configs    21.6s
+skab/valve1_14               bocpd    501 configs   615.0s
+skab/valve2_2                pelt      83 configs   390.7s
+skab/valve2_2                binseg   165 configs    45.6s
+skab/valve2_2                bocpd    501 configs   385.9s
+skab/other_3                 pelt      83 configs   226.8s
+skab/other_3                 binseg   165 configs    22.9s
+skab/other_3                 bocpd    501 configs   366.9s
+skab/other_7                 pelt      83 configs   237.5s
+skab/other_7                 binseg   165 configs    16.9s
+skab/other_7                 bocpd    501 configs   234.2s
+skab/other_11                pelt      83 configs   570.9s
+skab/other_11                binseg   165 configs    41.6s
+skab/other_11                bocpd    501 configs   512.1s
