@@ -149,6 +149,8 @@ After `activate`, your prompt starts with `(.venv)`. **Activate it again in ever
 > On PowerShell, if `activate` is blocked, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first, or use Command Prompt.
 
 ### Step 3: Download the datasets (~5 min)
+> **Shortcut:** if you copied the project folder **including `data/`** from the original laptop, `data/processed/` is already there. Skip Steps 3 and 4 and go to Step 5, which needs no internet.
+
 ```bash
 python scripts/download_data.py
 ```
