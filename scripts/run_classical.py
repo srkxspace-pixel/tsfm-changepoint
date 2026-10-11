@@ -1,9 +1,11 @@
 """Run PELT, BinSeg and BOCPD (default + oracle grid) on every series.
 
-Writes results/classical/grid.csv: one row per (series, method, config), with the
+Writes results/classical/grid*.csv: one row per (series, method, config), with the
 change points, runtime and F1/covering. Resumable: finished (series, method) pairs are skipped.
+Parallel: `run_classical.py <shard> <n_shards>` handles every n-th series into grid_<shard>.csv.
 """
 import csv
+import sys
 import itertools
 import json
 import time
@@ -16,7 +18,7 @@ from cpd.baselines.classical import binseg, binseg_path, pelt
 from cpd.data.loaders import load_processed, zscore
 from cpd.evaluation.metrics import score
 
-OUT = ROOT / "results/classical/grid.csv"
+OUT_DIR = ROOT / "results/classical"
 FIELDS = ["series_id", "dataset", "method", "config", "is_default", "n_cps", "cps", "runtime_s", "f1", "cover"]
 
 
@@ -69,17 +71,19 @@ def main():
     cfg = load_config("baselines")
     margins = load_config("datasets")["margin"]
     data = load_processed(ROOT / load_config("datasets")["processed_dir"])
+    shard, n_shards = (int(a) for a in sys.argv[1:3]) if len(sys.argv) > 2 else (0, 1)
+    out = OUT_DIR / (f"grid_{shard}.csv" if n_shards > 1 else "grid.csv")
     done = set()
-    if OUT.exists():
-        with OUT.open() as f:
-            done = {(r["series_id"], r["method"]) for r in csv.DictReader(f)}
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    new = not OUT.exists()
-    with OUT.open("a", newline="") as f:
+    for path in OUT_DIR.glob("grid*.csv"):
+        with path.open() as f:
+            done |= {(r["series_id"], r["method"]) for r in csv.DictReader(f) if r["cover"]}
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    new = not out.exists()
+    with out.open("a", newline="") as f:
         w = csv.DictWriter(f, FIELDS)
         if new:
             w.writeheader()
-        for sid, s in data.items():
+        for sid, s in list(data.items())[shard::n_shards]:
             z = zscore(s["values"])
             for method, runs in METHODS.items():
                 if (sid, method) in done:
