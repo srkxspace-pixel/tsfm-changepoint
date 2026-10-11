@@ -1,0 +1,17 @@
+# Dataset sources and filters (see docs/M0_FINDINGS.md §4).
+processed_dir: data/processed
+
+tcpd:
+  raw_dir: data/raw/TCPD            # git clone https://github.com/alan-turing-institute/TCPD + build_tcpd.py collect
+  exclude:                          # same exclusions as TCPDBench's published averages
+    quality_control_1: simulated annotator-check series, not part of the benchmark
+    quality_control_2: simulated annotator-check series, not part of the benchmark
+    quality_control_3: simulated annotator-check series, not part of the benchmark
+    quality_control_4: simulated annotator-check series, not part of the benchmark
+    quality_control_5: simulated annotator-check series, not part of the benchmark
+    uk_coal_employ: contains missing values (excluded by TCPDBench as well)
+
+skab:
+  raw_dir: data/raw/SKAB/data       # git clone https://github.com/waico/SKAB (v0.9)
+  groups: [valve1, valve2, other]   # anomaly-free.csv has no labels
+  sep: ";"

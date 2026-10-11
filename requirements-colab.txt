@@ -1,0 +1,4 @@
+# Installed inside the Colab notebook only (default runtime: Python 3.13, torch preinstalled).
+# Versions verified at M0 (2026-10-10). torch, numpy, pandas, pyyaml come from the Colab image.
+chronos-forecasting==2.3.2
+timesfm[torch]==3.0.2

@@ -1,0 +1,14 @@
+# Verified 2026-10-10 against the Hugging Face API (see docs/M0_FINDINGS.md §3).
+# Load with revision=<sha> so runs are reproducible.
+chronos-2:
+  hf_id: amazon/chronos-2
+  revision: 29ec3766d36d6f73f0696f85560a422f50e8498c
+  license: Apache-2.0
+  package: chronos-forecasting==2.3.2
+  used_for: [residual, embedding]
+timesfm-2.5:
+  hf_id: google/timesfm-2.5-200m-pytorch
+  revision: 1d952420fba87f3c6dee4f240de0f1a0fbc790e3
+  license: Apache-2.0
+  package: timesfm[torch]==3.0.2
+  used_for: [residual]
