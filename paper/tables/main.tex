@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\caption{Mean F1 (margin 5) and segmentation covering over series. Default: fixed parameters; oracle: best of each method's grid per series.}
+\label{tab:main}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Method & TCPD default F1 & TCPD default Cov & TCPD oracle F1 & TCPD oracle Cov & SKAB default F1 & SKAB default Cov & SKAB oracle F1 & SKAB oracle Cov \\
+\midrule
+Zero (no CPs) & 0.638 & 0.554 & 0.638 & 0.554 & 0.349 & 0.364 & 0.349 & 0.364 \\
+PELT & 0.652 & 0.640 & 0.864 & 0.772 & 0.147 & 0.248 & 0.512 & 0.754 \\
+BinSeg & 0.686 & 0.665 & 0.861 & 0.774 & 0.347 & 0.621 & 0.463 & 0.727 \\
+BOCPD & 0.656 & 0.578 & 0.892 & 0.785 & 0.185 & 0.369 & 0.559 & 0.699 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}

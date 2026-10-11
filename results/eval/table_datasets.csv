@@ -1,0 +1,3 @@
+Dataset,Series,Multivariate,Length min,Length median,Length max,Annotators/series,Mean CPs/annotator,Margin
+TCPD,36,4,15,274,991,5,2.46,5
+SKAB,34,34,745,1140,1327,1,3.79,5

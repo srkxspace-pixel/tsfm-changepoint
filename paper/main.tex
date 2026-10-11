@@ -1,0 +1,130 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\graphicspath{{../figures/}{figures/}}
+
+\begin{document}
+
+\title{Do Zero-Shot Time-Series Foundation Models Detect Change Points? Forecast-Residual and Embedding-Distance Detectors vs.\ Classical CPD on Real-World and Industrial Sensor Data}
+
+\author{\IEEEauthorblockN{Srikar}
+\IEEEauthorblockA{\textit{Department and institution to be filled in}}}
+
+\maketitle
+
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+
+\begin{IEEEkeywords}
+change point detection, time-series foundation models, zero-shot learning, Chronos-2, TimesFM, benchmark
+\end{IEEEkeywords}
+
+\section{Introduction}
+Change point detection (CPD) finds the time steps at which the statistical behaviour of a time series changes, for example a shift in level, variance or dynamics. It is a basic step in monitoring industrial plants, finance and climate data. Classical methods such as PELT~\cite{killick2012pelt}, Binary Segmentation~\cite{scott1974binseg} and Bayesian online change point detection (BOCPD)~\cite{adams2007bocpd} are still the methods to beat on human-labelled benchmarks~\cite{vandenburg2020evaluation}. Learned detectors such as the time-invariant representation autoencoder (TIRE)~\cite{deryck2021tire} have to be trained for each new data source.
+
+Time-series foundation models (TSFMs) such as Chronos~\cite{ansari2024chronos}, Chronos-2~\cite{ansari2025chronos2} and TimesFM~\cite{das2024timesfm} are pretrained on large forecasting corpora and can be used \emph{zero-shot}, without any training on the target data. Uray et al.~\cite{uray2026exploring} ran TimesFM zero-shot on the SWaT industrial testbed and observed that its forecast error spikes at the start and end of anomalous segments, and they name change point detection as a promising use of foundation models. They did not test this: their study has no change point metric, no CPD baseline and only one dataset. Choi et al.~\cite{choi2026nonstationarity} showed that Chronos-2 and MOMENT embeddings separate mean, variance and trend shifts, but only with supervised probes on synthetic AR(1) windows where the change is always in the middle.
+
+This paper turns these observations into a direct test. Our research question is: \emph{can pretrained TSFMs, used zero-shot with no training, locate change points in real labelled data as accurately as established CPD methods?} We make the following contributions:
+\begin{itemize}
+\item A zero-shot \textbf{forecast-residual detector}: a one-step-ahead forecast surprise normalised by the model's own predictive interval, built on Chronos-2 and TimesFM-2.5. To our knowledge, this is the first evaluation of TSFM forecast residuals as a change point detector on labelled CPD benchmarks.
+\item A simple \textbf{split-window embedding detector} on Chronos-2 for comparison. The idea of using frozen embeddings for CPD is concurrent work~\cite{anon2026gasfm}; we include it to compare the two ways of using a TSFM under one protocol.
+\item An evaluation on the 36 human-annotated series of the Turing Change Point Dataset (TCPD)~\cite{vandenburg2020evaluation} and the 34 labelled files of the SKAB industrial testbed~\cite{skab}. We use the TCPDBench protocol (multi-annotator F1 and segmentation covering, default and oracle settings), and our classical baselines reproduce the published TCPDBench numbers.
+\end{itemize}
+
+\section{Related Work}
+\textbf{Classical CPD.} PELT~\cite{killick2012pelt} and Binary Segmentation~\cite{scott1974binseg} minimise a penalised segmentation cost offline. BOCPD~\cite{adams2007bocpd} tracks a posterior over the current run length online. Truong et al.~\cite{truong2020ruptures} review offline methods and provide the \texttt{ruptures} library. TCPDBench~\cite{vandenburg2020evaluation} evaluated 14 methods on TCPD and found that simple methods remain hard to beat, and that a method returning no change points at all is a strong reference.
+
+\textbf{Learned CPD.} KL-CPD~\cite{chang2019klcpd}, TS-CP2~\cite{deldari2021tscp2} and TIRE~\cite{deryck2021tire} learn representations in which a change becomes a large distance between neighbouring windows. TIRE, our IEEE base paper, trains an autoencoder whose time-invariant features are compared across adjacent windows. All of them must be trained on the target series. We ask whether a pretrained model can avoid this step. TIRE is discussed but not re-run, because its reference implementation carries no software license.
+
+\textbf{TSFMs.} Chronos~\cite{ansari2024chronos} tokenises scaled values for a language-model backbone. Chronos-2~\cite{ansari2025chronos2} adds native multivariate input and quantile outputs. TimesFM~\cite{das2024timesfm} is a decoder-only patch transformer, and MOMENT~\cite{goswami2024moment} is a masked encoder aimed at representations. For anomaly detection, benchmarks such as TSB-AD~\cite{liu2024tsbad} use TSFM forecast or reconstruction errors as scores, and they find that TSFMs are often matched by simple methods. These studies score anomalous \emph{points or segments}, not change point locations.
+
+\textbf{TSFMs and change points.} Uray et al.~\cite{uray2026exploring} motivate this work (Section~I). Choi et al.~\cite{choi2026nonstationarity} probe embeddings for the type of shift but do not localise it. A concurrent submission~\cite{anon2026gasfm} projects frozen TSFM embeddings to a univariate statistic and applies a statistical scan detector. Unlike these works, we study forecast residuals as well as embeddings, on real labelled CPD benchmarks, against classical CPD under the established TCPDBench protocol.
+
+\section{Method}
+Let $\mathbf{x}_{0:T}\in\mathbb{R}^{T\times C}$ be a series with $C$ channels, z-scored per channel. A detector outputs a set of change points $\hat{\mathcal{T}}\subset\{1,\dots,T-2\}$, each the first index of a new segment. Both TSFM detectors first produce a score $s_t$ for every time step and then share the same peak-picking step (Section~\ref{sec:peaks}), so differences between them come only from the scores. Fig.~\ref{fig:pipeline} summarises the pipeline.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=0.35cm and 0.45cm, every node/.style={font=\scriptsize, align=center},
+  box/.style={draw, rounded corners=2pt, minimum height=0.75cm, text width=1.55cm}, >={Stealth[length=1.6mm]}]
+\node[box] (data) {TCPD + SKAB\\(z-scored)};
+\node[box, right=of data, yshift=0.55cm] (res) {TSFM one-step\\forecast $\to s_t$};
+\node[box, right=of data, yshift=-0.55cm] (emb) {Chronos-2 split-\\window embedding};
+\node[box, right=of res, yshift=-0.55cm] (pk) {Robust $z$, smooth,\\peaks $>\tau$};
+\node[box, below=0.55cm of emb] (cls) {PELT / BinSeg /\\BOCPD};
+\node[box, right=of pk] (ev) {F1 (margin 5)\\+ covering};
+\draw[->] (data) -- (res); \draw[->] (data) -- (emb); \draw[->] (res) -- (pk); \draw[->] (emb) -- (pk);
+\draw[->] (pk) -- (ev); \draw[->] (data) |- (cls); \draw[->] (cls) -| (ev);
+\end{tikzpicture}
+\caption{Pipeline. TSFM inference runs zero-shot on a Colab T4 GPU; everything else runs on a CPU.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Forecast-residual detector}
+For every $t$ the model forecasts $x_t$ one step ahead from the context $\mathbf{x}_{\max(0,t-L):t}$. The context grows from the start of the series until it reaches length $L$, so short series are still scored; steps with fewer than 8 past values get $s_t=0$. With predicted quantiles $\hat q^{0.1}, \hat q^{0.5}, \hat q^{0.9}$ the score is
+\begin{equation}
+s_t = \frac{1}{C}\sum_{c=1}^{C}\frac{\lvert x_{t,c}-\hat q^{0.5}_{t,c}\rvert}{\max\left(\hat q^{0.9}_{t,c}-\hat q^{0.1}_{t,c},\,\epsilon\right)},
+\end{equation}
+which is the surprise of the observed value relative to the model's own uncertainty, with $\epsilon=10^{-3}$. A change at $t$ makes $x_t$ unlike its context, so $s_t$ should peak at the first point of the new segment. Chronos-2 receives all channels jointly. TimesFM-2.5 is univariate, so each channel is forecast separately and the channel scores are averaged.
+
+\subsection{Split-window embedding detector}
+Chronos-2 normalises every input by its own mean and scale. If the windows before and after $t$ were embedded separately, a pure level shift would therefore disappear. Instead, we embed one window $\mathbf{x}_{t-w:t+w}$ centred on $t$ and take its patch-token embeddings $\mathbf{e}_1,\dots,\mathbf{e}_P$ (patch size 16, averaged over channels). With $\mathbf{h}^-_t$ and $\mathbf{h}^+_t$ the means of the left and right halves of the tokens,
+\begin{equation}
+d_t = 1-\cos\left(\mathbf{h}^-_t,\mathbf{h}^+_t\right).
+\end{equation}
+Both halves share one normalisation, so level and scale shifts remain visible. Steps closer than $w$ to either end get $d_t=0$.
+
+\subsection{Shared peak picking}\label{sec:peaks}
+Each score curve is robustly standardised as $(s_t-\mathrm{med}(s))/(1.4826\,\mathrm{MAD}(s))$ and smoothed with a centred moving average of width 3. Every local maximum above a threshold $\tau$, at least 5 steps from its neighbours, is reported as a change point.
+
+\subsection{Classical baselines}
+PELT and Binary Segmentation (\texttt{ruptures}~\cite{truong2020ruptures}) use a Gaussian mean-change cost. With the MBIC penalty ($3\log n$ plus $\log$ of each segment length), they reproduce the change points of the R \texttt{changepoint} defaults used by TCPDBench on all 32 univariate TCPD series. Binary Segmentation is capped at 5 change points by default, as in TCPDBench. BOCPD uses a Normal-Inverse-Gamma model with constant hazard $1/\lambda$. Our Python implementation follows the R \texttt{ocp} recursion, run-length truncation and MAP change point path, and returns the same change points as TCPDBench on all 36 TCPD series.
+
+\section{Experimental Setup}
+\textbf{Data.} TCPD~\cite{vandenburg2020evaluation} contains real series from economics, demography, climate, traffic and other domains, each annotated by five people. We keep the 36 series used in TCPDBench's averages: the five simulated quality-control series and \texttt{uk\_coal\_employ} (missing values) are excluded. SKAB~\cite{skab} contains 34 labelled files from a water-circulation Industrial-IoT testbed with 8 sensors sampled at about 1~Hz. The labelled change points mark the transitions into and out of induced faults. Table~\ref{tab:datasets} summarises both datasets. TCPD is short: half of its series have fewer than 275 points.
+
+\input{tables/datasets}
+
+\textbf{Metrics.} We use the TCPDBench definitions~\cite{vandenburg2020evaluation}, ported verbatim and checked to reproduce TCPDBench's stored scores on all of its default runs.
+\begin{itemize}
+\item \emph{F1 with margin $M=5$.} Index 0 counts as a change point. Precision is computed against the union of all annotators, and recall is averaged over annotators.
+\item \emph{Segmentation covering.} The covering of each annotator's segmentation by the predicted one~\cite{arbelaez2011contour}, averaged over annotators.
+\end{itemize}
+For SKAB (one annotator) we use the same margin. Its change points are at least about 55 steps apart, so the margins never overlap.
+
+\textbf{Settings.} Following TCPDBench, every method is evaluated in two settings:
+\begin{itemize}
+\item \emph{Default}: one parameter set, fixed before any result was seen ($L=128$, $w=32$, $\tau=3$ for the TSFM detectors; package defaults for the baselines).
+\item \emph{Oracle}: the per-series maximum over a parameter grid, an upper bound on what tuning could achieve.
+\end{itemize}
+The oracle grids are:
+\begin{itemize}
+\item PELT: 83 configurations (mean or mean-and-variance cost $\times$ 41 penalties).
+\item Binary Segmentation: 165 configurations.
+\item BOCPD: 501 configurations, the TCPDBench grid.
+\item Residual detectors: 40 configurations ($L\in\{32,64,128,256\}\times$ 10 values of $\tau$).
+\item Embedding detector: 30 configurations ($w\in\{16,32,64\}\times$ 10 values of $\tau$).
+\end{itemize}
+The TSFM grids are smaller, which can only lower their oracle scores. A method that returns no change points (\emph{Zero}) is reported as a reference.
+
+\textbf{Implementation.}
+\begin{itemize}
+\item \emph{Models.} Chronos-2 (\texttt{amazon/chronos-2}, 120M parameters) and TimesFM-2.5 (\texttt{google/timesfm-2.5-200m-pytorch}) were loaded at pinned Hugging Face revisions. They ran zero-shot in fp32 on one NVIDIA T4 GPU in Google Colab (\texttt{chronos-forecasting} 2.3.2, \texttt{timesfm} 3.0.2, PyTorch 2.11).
+\item \emph{Baselines.} The classical methods ran on a CPU.
+\item \emph{Statistics.} Per-series F1 of each TSFM detector is compared with the best classical baseline using the Wilcoxon signed-rank test~\cite{wilcoxon1945} with Holm correction~\cite{holm1979}.
+\end{itemize}
+All code, configurations, the executed notebook and per-series results are released with the paper.
+
+\input{tables/tcpdbench}
+
+\input{sections/results}
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}

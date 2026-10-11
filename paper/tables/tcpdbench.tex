@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\caption{Reproduction of TCPDBench defaults on the 32 univariate TCPD series. PELT differs only by TCPDBench storing each change point one index early.}
+\label{tab:tcpdbench}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrr}
+\toprule
+Method & Ours F1 & TCPDBench F1 & Ours Cov & TCPDBench Cov \\
+\midrule
+Zero (no CPs) & 0.645 & 0.645 & 0.566 & 0.566 \\
+BinSeg & 0.698 & 0.698 & 0.672 & 0.672 \\
+PELT & 0.657 & 0.674 & 0.652 & 0.652 \\
+BOCPD & 0.662 & 0.662 & 0.594 & 0.594 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
