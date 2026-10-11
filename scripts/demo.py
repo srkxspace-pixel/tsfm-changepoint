@@ -1,59 +1,23 @@
-"""Live demo for one series: classical CPD runs live on CPU, TSFM detectors use the saved Colab scores.
+"""Live demo for one series (command line). For the web version run: streamlit run app.py
 
     python scripts/demo.py                  # Nile river (classic change point example)
     python scripts/demo.py skab/valve1_0    # an industrial SKAB file
     python scripts/demo.py --list           # all 70 series ids
     python scripts/demo.py tcpd/nile --show # also open the figure window
 
-Prints each method's detected change points with F1 / covering against the human labels,
-saves figures/demo_<series>.png, then prints the overall benchmark table.
+Classical methods run live on CPU; TSFM detectors use the saved Colab scores. Prints each method's
+detected change points with F1 / covering against the human labels, saves figures/demo_<series>.png,
+then prints the overall benchmark table.
 """
 import argparse
-import time
 
 import matplotlib
 import numpy as np
 import pandas as pd
 
 from cpd import ROOT, load_config
-from cpd.baselines.bocpd import bocpd
-from cpd.baselines.classical import binseg, binseg_path, pelt
 from cpd.data.loaders import load_processed, zscore
-from cpd.detectors.peaks import scores_to_cps
-from cpd.evaluation.metrics import clean_cps, score
-
-TSFM = {"chronos2_residual": ("Chronos-2 residual", "residual", "#2a78d6"),
-        "timesfm25_residual": ("TimesFM-2.5 residual", "residual", "#eb6834"),
-        "chronos2_embedding": ("Chronos-2 embedding", "embedding", "#1baf7a")}
-
-
-def classical_defaults(z):
-    cfg, n = load_config("baselines"), len(z)
-    p, b, o = cfg["pelt"]["default"], cfg["binseg"]["default"], cfg["bocpd"]["default"]
-    runs = {"PELT": lambda: pelt(z, 3 * np.log(n), p["cost"], p["mbic"]),
-            "BinSeg": lambda: binseg(binseg_path(z, b["cost"], b["mbic"]), 3 * np.log(n), b["max_cps"]),
-            "BOCPD": lambda: clean_cps(bocpd(z, **o), n)}
-    out = {}
-    for name, fn in runs.items():
-        t0 = time.perf_counter()
-        out[name] = (fn(), time.perf_counter() - t0, "live, CPU")
-    return out
-
-
-def tsfm_saved(sid):
-    det = load_config("detectors")
-    pk = det["peaks"]
-    out = {}
-    for key, (name, kind, _) in TSFM.items():
-        path = ROOT / "results/tsfm_raw" / key / f"{sid.replace('/', '__')}.npz"
-        if not path.exists():
-            print(f"  (no saved scores for {name}: {path} missing)")
-            continue
-        p = det[kind]["default_context" if kind == "residual" else "default_half_window"]
-        arr = np.load(path)
-        cps = scores_to_cps(arr[f"p{p}"], pk["default_tau"], pk["smooth"], pk["min_gap"])
-        out[name] = (cps, float(arr[f"runtime_p{p}"]), "saved, Colab T4 GPU")
-    return out
+from cpd.demo import CLASSICAL_COLOR, COLOR, classical_defaults, score_rows, tsfm_saved
 
 
 def plot(sid, s, results, show):
@@ -67,10 +31,9 @@ def plot(sid, s, results, show):
     top.plot(z + np.arange(z.shape[1]) * 5.0, color="#0b0b0b", linewidth=0.7)
     top.set_title(f"{sid}: {s['n_obs']} steps, {s['n_dim']} channel(s); dashed = human-annotated change points")
     top.set_yticks([])
-    colors = {name: c for name, _, c in TSFM.values()}
     for i, name in enumerate(names):
-        cps = results[name][0]
-        bot.plot(cps, [i] * len(cps), "|", markersize=14, markeredgewidth=2.2, color=colors.get(name, "#52514e"))
+        cps = results[name]["cps"]
+        bot.plot(cps, [i] * len(cps), "|", markersize=14, markeredgewidth=2.2, color=COLOR.get(name, CLASSICAL_COLOR))
     bot.set_yticks(range(len(names)), names)
     bot.set_ylim(-0.7, len(names) - 0.3)
     bot.set_xlabel("time step")
@@ -100,21 +63,15 @@ def main():
     if args.series not in data:
         raise SystemExit(f"unknown series {args.series!r}; see --list")
     s = data[args.series]
-    margin = load_config("datasets")["margin"][s["dataset"]]
-    truth = {a: c for a, c in s["annotations"].items()}
     print(f"Series {args.series}: {s['n_obs']} steps, {s['n_dim']} channel(s)")
-    print("Human annotations (per annotator):", truth)
+    print("Human annotations (per annotator):", s["annotations"])
 
-    zero = {"Zero (no CPs)": ([], 0.0, "reference")}
-    results = zero | classical_defaults(zscore(s["values"])) | tsfm_saved(args.series)
-    rows = []
-    for name, (cps, runtime, where) in results.items():
-        f1, cover = score(s["annotations"], cps, s["n_obs"], margin)
-        shown = " ".join(map(str, cps[:10])) + (" ..." if len(cps) > 10 else "")
-        rows.append(dict(Method=name, Detected=shown or "-", F1=round(f1, 3), Cover=round(cover, 3),
-                         Runtime_s=round(runtime, 2), Where=where))
+    results = ({"Zero (no CPs)": dict(cps=[], runtime=0.0, where="reference")}
+               | classical_defaults(s["values"]) | tsfm_saved(args.series))
     pd.set_option("display.width", 200)
-    print("\n" + pd.DataFrame(rows).to_string(index=False))
+    table = pd.DataFrame(score_rows(s, results))
+    table["Detected"] = table.Detected.map(lambda d: d if len(d) < 45 else d[:42] + "...")
+    print("\n" + table.to_string(index=False))
     plot(args.series, s, results, args.show)
 
     main_table = ROOT / "results/eval/table_main.csv"

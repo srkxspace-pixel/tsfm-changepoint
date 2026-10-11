@@ -27,14 +27,15 @@ The project compares:
 
 ## 2. What the final output is (and why there is no frontend)
 
-This is a **research project**, not an app, so **no frontend or website is needed**. The final output is the **measured answer to the research question** plus the evidence behind it:
+This is a **research project**, not an app. Its final output is the **measured answer to the research question** plus the evidence behind it. For the demonstration there is also a small **Streamlit web page** (`app.py`) that shows the results interactively. It is a viewer, not a product.
 
 | Output | Where | What it shows |
 |---|---|---|
 | Results tables (CSV and LaTeX) | `results/eval/`, `paper/tables/` | Every method's F1 and covering on every series, the statistical tests and the runtime |
 | Figures | `figures/` | Example detections (Fig. 2), F1 distribution (Fig. 3), effect of context length (Fig. 4) |
 | Executed GPU notebook | `notebooks/colab/01_tsfm_scores.ipynb` | The real Chronos-2 and TimesFM-2.5 runs on a Colab T4 GPU, with all outputs visible |
-| Live demo script | `scripts/demo.py` | Runs the methods on any one series and shows detections against the human labels |
+| **Web demo (Streamlit)** | `app.py` | Interactive page: pick any series, see every method's detections vs the human labels, move the threshold, browse all results |
+| Live demo script | `scripts/demo.py` | Same as the web demo, in the terminal |
 | Tested code | `src/cpd/`, `tests/` | 19 automated tests, including checks that our numbers reproduce TCPDBench |
 | Paper (draft) | `paper/main.tex` | IEEE conference format |
 
@@ -91,6 +92,8 @@ p1-tsfm-changepoint/
 │   ├── baselines/             ← classical.py (PELT, BinSeg), bocpd.py (BOCPD)
 │   ├── detectors/             ← scores.py (residual and embedding scores), peaks.py (score → change points)
 │   └── evaluation/            ← metrics.py (F1, covering), stats.py (Wilcoxon + Holm)
+├── app.py                     ← Streamlit web demo (streamlit run app.py)
+├── .streamlit/config.toml     ← web demo theme
 ├── scripts/                   ← the commands you run, in order (see Section 6)
 ├── notebooks/colab/           ← 01_tsfm_scores.ipynb (executed, with outputs)
 ├── tests/                     ← pytest tests
@@ -115,8 +118,8 @@ p1-tsfm-changepoint/
 ## 6. Step-by-step: run the project
 
 > **Two ways to run it:**
-> - **A. Demo mode (about 10 minutes).** Use the results already in `results/`. Nothing heavy is re-run. Do Steps 1–4, then Step 10. **Use this on the demonstration laptop.**
-> - **B. Full reproduction (about 4 hours, most of it unattended).** Re-run every experiment from scratch. Do Steps 1–10.
+> - **A. Demo mode (about 10 minutes).** Use the results already in `results/`. Nothing heavy is re-run. Do Steps 1–5, then Step 10 (web demo). **Use this on the demonstration laptop.**
+> - **B. Full reproduction (about 4 hours, most of it unattended).** Re-run every experiment from scratch. Do Steps 1–11.
 
 In the commands below, lines starting with `#` are comments. Run the commands from the project folder.
 
@@ -177,7 +180,7 @@ skab: 34 series (34 multivariate), length 745-1327, 129 annotated change points 
 ```bash
 python -m pytest
 ```
-Expected: `19 passed`. Tests that need the optional TCPDBench files are *skipped* (not failed) if you didn't download them.
+Expected: `22 passed`. Tests that need the optional TCPDBench files are *skipped* (not failed) if you didn't download them.
 
 These tests check, among other things, that:
 - our F1 and covering code gives exactly TCPDBench's published scores;
@@ -229,7 +232,19 @@ python scripts/make_report.py
 - `evaluate.py` prints the summary table and writes `results/eval/*.csv`.
 - `make_report.py` writes `paper/tables/*.tex` and `figures/fig2_example`, `fig3_f1_boxplot` and `fig4_context_length` (each as `.pdf` and `.png`).
 
-### Step 10: Live demo (~30 s per series)
+### Step 10: Web demo (Streamlit)
+```bash
+streamlit run app.py
+```
+Your browser opens at http://localhost:8501. If it doesn't, open that address yourself. The first load takes 10–60 s (it imports the libraries); after that every click takes about 1–5 s. **Open it a few minutes before your presentation.** Stop it with `Ctrl+C` in the terminal.
+
+| Tab | What you can do |
+|---|---|
+| 🔍 **Live detection** | Choose a dataset and series in the sidebar. PELT, BinSeg and BOCPD run **live**. Chronos-2 and TimesFM-2.5 use the saved Colab scores. You see the series with the dashed human labels, every method's detections, the F1 and covering table, and the foundation model's score curve. Move **τ** or **L** in the sidebar and the detections update instantly. |
+| 📊 **Benchmark results** | The main table, the box-plot and context-length figures, the Wilcoxon tests, runtimes, the TCPDBench reproduction check and the breakdown by series length |
+| ℹ️ **About the project** | The research question, the gap, the detectors, the pipeline, and the GPU run record (models, revisions, GPU, timings) |
+
+### Step 11: Terminal demo (~30 s per series, same content without a browser)
 ```bash
 python scripts/demo.py                    # Nile river: the classic change point example
 python scripts/demo.py skab/valve1_0      # an industrial pump recording
@@ -250,9 +265,9 @@ For one series, the demo does the following:
 | 1 | The problem and the gap | 2 slides: what a change point is, what TSFMs are, and the gap from Uray et al. 2026 | "They saw forecast errors spike at changes and suggested CPD; nobody had measured it." |
 | 2 | The pipeline | Section 3 diagram (or Fig. 1 in the paper) | Zero-shot: no model is trained. GPU work in Colab; everything else on the laptop. |
 | 3 | Trustworthy evaluation | `python -m pytest` (live) and `results/eval/table_tcpdbench.csv` | Our metrics and baselines reproduce the published TCPDBench numbers. |
-| 4 | Live detection | `python scripts/demo.py tcpd/nile --show`, then `python scripts/demo.py skab/valve1_0 --show` | Compare each method's detections with the dashed human labels. |
+| 4 | Live detection | `streamlit run app.py` → *Live detection* tab. Show `nile` (TCPD), then switch to SKAB `valve1_0`, then move the **τ** slider | Compare each method's detections with the dashed human labels. τ shows how the threshold trades misses against false alarms. |
 | 5 | Real GPU runs | Open `notebooks/colab/01_tsfm_scores.ipynb` and `results/tsfm_raw/manifest.json` | Real Chronos-2 and TimesFM-2.5 inference on a T4, pinned model versions, 210/210 outputs. |
-| 6 | Results | `figures/fig3_f1_boxplot.png`, the table in Section 2, `results/eval/stats.csv` | The answer to the research question, with significance tests. |
+| 6 | Results | Web demo → *Benchmark results* tab (same content as `results/eval/`) | The answer to the research question, with significance tests. |
 | 7 | Insights | `figures/fig4_context_length.png`, `results/eval/breakdown.csv` | TSFMs are good on short series and weak on long ones; tuning favours classical methods; GPU cost is 10–70× higher. |
 | 8 | Conclusion | 1 slide | A mixed, honest result: zero-shot TSFMs match untuned classical CPD on TCPD, but don't beat tuned classical CPD. Future work: better thresholds, multivariate TSFMs, other industrial data. |
 
@@ -295,6 +310,10 @@ All parameters live in `configs/`. No numbers are hard-coded in the code.
 | `score_tsfm.py` says the Colab output is missing | Unzip `tsfm_raw.zip` so that `results/tsfm_raw/manifest.json` exists. |
 | Colab: `Upload colab_input.zip …` assertion | The Drive folder must be exactly `My Drive/P1-tsfm/`, or edit the `DRIVE = …` line in the first code cell. |
 | Colab disconnected mid-run | Run all again; finished files are skipped. |
+| `streamlit` not found | Activate the environment and run `pip install -r requirements-local.txt` again. |
+| Web demo shows "Missing …" | It names the missing file and the command that creates it. |
+| Port 8501 already in use | `streamlit run app.py --server.port 8502` |
+| Web demo very slow on first load | Normal on low-memory laptops: close heavy apps (Docker/WSL, many browser tabs) and wait for the first load. Later clicks are fast. |
 
 ## 11. Credits and citations
 
