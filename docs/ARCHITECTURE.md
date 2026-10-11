@@ -28,7 +28,7 @@ p1-tsfm-changepoint/
 │   ├── tsfm_cp/                  # grid.csv: change points after peak picking
 │   └── eval/                     # metric tables (CSV)
 ├── figures/
-├── scripts/                      # prepare_data.py, run_classical.py, score_tsfm.py, evaluate.py, make_report.py
+├── scripts/                      # download_data, prepare_data, run_classical, make_colab_bundle, score_tsfm, evaluate, make_report, demo
 ├── tests/
 ├── paper/
 └── docs/

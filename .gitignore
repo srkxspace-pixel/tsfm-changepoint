@@ -8,3 +8,4 @@ data/processed/*
 *.egg-info/
 .pytest_cache/
 colab_input.zip
+figures/demo_*
