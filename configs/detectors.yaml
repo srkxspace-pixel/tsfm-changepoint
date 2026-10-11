@@ -1,0 +1,21 @@
+# TSFM detectors (docs/DESIGN.md D1-D3). Defaults are fixed before seeing any results.
+seed: 42
+residual:                       # D1: one-step-ahead forecast surprise
+  context_lengths: [32, 64, 128, 256]
+  default_context: 128
+  min_context: 8                # steps with less history get score 0
+  quantiles: [0.1, 0.5, 0.9]
+  eps: 1.0e-3                   # floor on the q90 - q10 spread (z-scored units)
+embedding:                      # D2: split-window embedding distance (Chronos-2)
+  half_windows: [16, 32, 64]    # w; the model sees [t - w, t + w), patch size 16
+  default_half_window: 32
+peaks:                          # D3: shared score -> change point conversion
+  smooth: 3
+  min_gap: 5
+  default_tau: 3.0
+  tau_grid: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]
+colab:
+  chronos_batch_size: 1024      # counts variates, so ~128 SKAB windows per batch
+  timesfm_batch_size: 256
+  timesfm_max_context: 256
+  timesfm_max_horizon: 128

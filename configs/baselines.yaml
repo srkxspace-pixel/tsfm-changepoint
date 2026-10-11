@@ -1,0 +1,15 @@
+# Classical baselines (docs/DESIGN.md D4). Defaults mirror TCPDBench (verified to reproduce
+# its stored change points on all TCPD series). "mbic" penalty = 3 * log(n).
+pelt:
+  default: {cost: mean, mbic: true, pen: mbic}
+binseg:
+  default: {cost: mean, mbic: true, pen: mbic, max_cps: 5}
+segmentation_grid:            # oracle grid for PELT and BinSeg (default config is always included)
+  costs: [mean, meanvar]
+  pen_log10: {start: -1, stop: 3, num: 41}
+  binseg_max_cps: [5, null]
+bocpd:
+  default: {lam: 100, mu0: 0.0, kappa0: 1.0, alpha0: 1.0, beta0: 1.0, trunc: 1.0e-4}
+  grid:                       # same grid as TCPDBench (4 x 5^3 = 500 configs)
+    lam: [10, 50, 100, 200]
+    prior: [0.01, 0.1, 1, 10, 100]   # alpha0, beta0, kappa0 each

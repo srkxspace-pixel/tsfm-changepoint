@@ -1,5 +1,6 @@
 # Dataset sources and filters (see docs/M0_FINDINGS.md §4).
 processed_dir: data/processed
+margin: {tcpd: 5, skab: 5}       # F1 margin in time steps (DESIGN D5)
 
 tcpd:
   raw_dir: data/raw/TCPD            # git clone https://github.com/alan-turing-institute/TCPD + build_tcpd.py collect

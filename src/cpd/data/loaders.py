@@ -33,6 +33,12 @@ def load_skab(raw_dir, groups, sep=";"):
     return series
 
 
+def zscore(values):
+    """Per-channel z-score (sample sd, like R scale()); constant channels become 0."""
+    sd = values.std(0, ddof=1)
+    return (values - values.mean(0)) / np.where(sd > 0, sd, 1.0)
+
+
 def check_series(series_id, s):
     """Label checks: finite (T, C) values, every change point inside [0, T)."""
     v = s["values"]

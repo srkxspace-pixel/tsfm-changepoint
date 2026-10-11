@@ -1,0 +1,9 @@
+tcpd/apple                   pelt      83 configs    49.5s
+tcpd/apple                   binseg   165 configs     1.7s
+tcpd/apple                   bocpd    501 configs    82.5s
+tcpd/bank                    pelt      83 configs   116.6s
+tcpd/bank                    binseg   165 configs     3.3s
+tcpd/bank                    bocpd    501 configs    60.2s
+tcpd/bee_waggle_6            pelt      83 configs    85.6s
+tcpd/bee_waggle_6            binseg   165 configs     4.5s
+tcpd/bee_waggle_6            bocpd    501 configs   169.8s
