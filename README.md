@@ -16,7 +16,7 @@
 4. [How it works](#4-how-it-works)
 5. [Results and findings](#5-results-and-findings)
 6. [Folder structure](#6-folder-structure)
-7. [Requirements](#7-requirements)
+7. [One-time setup on a new laptop](#7-one-time-setup-on-a-new-laptop)
 8. [Step-by-step: run the project](#8-step-by-step-run-the-project)
 9. [Presenting the project (demo plan)](#9-presenting-the-project-demo-plan)
 10. [Key terms (for the viva)](#10-key-terms-for-the-viva)
@@ -272,16 +272,46 @@ p1-tsfm-changepoint/
 
 ---
 
-## 7. Requirements
+## 7. One-time setup on a new laptop
 
 | Need | Version / note |
 |---|---|
-| **Python** | **3.11** (tested). Download it from https://www.python.org/downloads/ and, on Windows, tick **"Add Python to PATH"** during installation. |
-| **git** | Any recent version (https://git-scm.com/downloads). The download script uses it. |
-| **Internet** | Needed once, to download the data (about 40 MB, or about 350 MB with the optional TCPDBench files). |
-| **Disk space** | About 500 MB, including the Python environment |
+| **Python** | **3.11** exactly (tested with 3.11.9). Other Python versions can stay installed alongside it. |
+| **git** | Any recent version. It moves the project to the laptop (Step 0) and downloads the data (Step 3). |
+| **Internet** | Needed for Steps 2 and 3: about 300 MB of Python packages and about 350 MB of data. |
+| **Disk space** | About 1–2 GB, mostly the Python environment and the downloaded data |
+| **A short folder path** | For example `C:\projects\p1-tsfm-changepoint`. Windows limits file paths to 260 characters, and a deeply nested folder makes Step 2 fail. |
 | **GPU** | **Not needed on the laptop.** Only the optional Colab step uses one (a free Google account is enough). |
-| **Operating system** | Windows 10/11, macOS or Linux |
+| **Operating system** | Windows 10/11 (tested), macOS or Linux |
+
+### 7.1 Install Python 3.11
+
+🪟 **Windows:**
+1. Open https://www.python.org/downloads/release/python-3119/ and scroll down to **Files**.
+2. Click **Windows installer (64-bit)** to download it.
+3. Run the installer. On the first screen, tick **"Add python.exe to PATH"**, then click **Install Now**.
+4. Open a **new** PowerShell window and check:
+   ```powershell
+   py -3.11 --version
+   ```
+   It should print `Python 3.11.9`.
+
+🍎 **macOS:** download the *macOS 64-bit universal2 installer* from the same page and run it. Check with `python3.11 --version`.
+
+🐧 **Linux (Ubuntu/Debian):** `sudo apt install python3.11 python3.11-venv`. Check with `python3.11 --version`.
+
+### 7.2 Install git
+
+🪟 **Windows:**
+1. Open https://git-scm.com/download/win and download **64-bit Git for Windows Setup**.
+2. Run it and click **Next** on every screen; the defaults are fine.
+3. Open a **new** PowerShell window and check:
+   ```powershell
+   git --version
+   ```
+   It should print `git version 2.…`.
+
+🍎 **macOS:** run `xcode-select --install` in Terminal. 🐧 **Linux:** run `sudo apt install git`.
 
 ---
 
@@ -291,8 +321,11 @@ p1-tsfm-changepoint/
 
 | Path | Time | Steps | When to use |
 |---|---|---|---|
-| **A. Demo** | about 10 min | 1 → 2 → 3 → 4 → 5 → 10 | Show the project using the results already saved in `results/`. **Use this on the presentation laptop.** |
-| **B. Full reproduction** | about 4 h, mostly unattended | 1 → 11, all of them | Re-run every experiment from scratch |
+| **A. Demo** | about 15 min | 0 → 1 → 2 → 3 → 4 → 5 → 10 | Show the project using the results already saved in `results/`. **Use this on the presentation laptop.** |
+| **B. End-to-end check** | about 20–30 min | 0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 9b → 10 | **Use this to check the project on another laptop.** It builds everything from nothing (environment, data, tests) and regenerates every result table and figure from the saved model outputs. Step 9b then proves they came out identical. It skips only the two long compute steps, whose outputs are already saved in `results/`. |
+| **C. Full re-run** | about 4 h, mostly unattended | 0 → 11, all of them | Re-run every experiment, including the 2-hour classical grid (Step 6) and the GPU run in Colab (Step 7) |
+
+Path B was tested from scratch on 2026-10-19: a fresh clone from the bundle, a new environment, a fresh data download, the tests, and a rebuild of every result. Every table and CSV came out byte-for-byte identical.
 
 ### About the terminals
 
@@ -302,27 +335,65 @@ Every command block below says **which terminal** to use:
 - 🍎🐧 **Terminal (macOS / Linux).** Open the *Terminal* app.
 - ☁️ **Google Colab.** A web page in your browser, not a terminal (Step 7 only).
 
-All commands are run **from the project folder**. After Step 2, the prompt must start with **`(.venv)`**. If it doesn't, activate the environment again (Step 2b). **Every new terminal window must be activated once.**
+From Step 1 on, all commands are run **from the project folder**. After Step 2, the prompt must start with **`(.venv)`**. If it doesn't, activate the environment again (Step 2b). **Every new terminal window must be activated once.**
+
+---
+
+### Step 0: Move the project to the other laptop (about 2 min)
+
+The project is copied as **one file**, a *git bundle* (about 6 MB). The bundle contains:
+- all the code;
+- every saved result, including the GPU outputs;
+- the executed Colab notebook;
+- the paper;
+- the full history.
+
+It leaves out the things each laptop must build for itself: `.venv` and `data/`.
+
+**0a. On the original laptop.** 🪟 PowerShell, in the project folder. The bundle holds only what is committed in git, so check first:
+```powershell
+git status
+```
+It must say `nothing to commit, working tree clean`. If it doesn't, commit your changes first. Then create the bundle:
+```powershell
+git bundle create ..\p1-tsfm.bundle --all
+```
+This writes `p1-tsfm.bundle` into the folder *above* the project folder. Copy that one file to the new laptop by USB stick, Google Drive or email.
+
+**0b. On the new laptop.** 🪟 PowerShell. First make a short folder and go into it:
+```powershell
+mkdir C:\projects
+```
+```powershell
+cd C:\projects
+```
+Put `p1-tsfm.bundle` into `C:\projects`, then unpack it:
+```powershell
+git clone -b master p1-tsfm.bundle p1-tsfm-changepoint
+```
+It prints `Cloning into 'p1-tsfm-changepoint'...`. The project is now in `C:\projects\p1-tsfm-changepoint`.
+
+🍎🐧 On macOS or Linux, the same commands work in Terminal with `~/projects` in place of `C:\projects`.
+
+> **Without git?** You can also copy the project folder itself (USB or zip). Leave out `.venv` and `data/`, and do **not** use a deeply nested folder. Step 9b needs the hidden `.git` folder, so copy that too.
 
 ---
 
 ### Step 1: Open a terminal in the project folder
 
-Copy the whole project folder to the laptop (USB, zip or `git clone`). Do **not** copy the `.venv` folder from another computer; Step 2 creates a fresh one.
-
-🪟 **PowerShell (Windows).** Change the path to wherever you put the folder:
+🪟 **PowerShell (Windows):**
 ```powershell
-cd "D:\project(sep'2026)\Agentic Ai\p1-tsfm-changepoint\p1-tsfm-changepoint"
+cd C:\projects\p1-tsfm-changepoint
 ```
 🍎🐧 **Terminal (macOS / Linux):**
 ```bash
-cd ~/p1-tsfm-changepoint
+cd ~/projects/p1-tsfm-changepoint
 ```
 Shortcut on Windows: open the folder in File Explorer, click the address bar, type `powershell` and press Enter.
 
 ---
 
-### Step 2: Create the Python environment and install the packages (about 3 min, first time only)
+### Step 2: Create the Python environment and install the packages (about 5 min, first time only)
 
 **2a. Create the environment** (only once):
 
@@ -364,22 +435,23 @@ The last line should end with `Successfully installed cpd-0.1.0`.
 
 ### Step 3: Download the datasets (about 5 min)
 
-> **Shortcut:** if you copied the project folder **including `data/processed/`**, skip Steps 3 and 4 and go straight to Step 5. No internet is needed.
+With `(.venv)` active, run the command for your path.
 
-With `(.venv)` active:
-```bash
-python scripts/download_data.py
-```
-This downloads TCPD and SKAB into `data/raw/`. It also builds the 10 TCPD series that come from external websites (archive.org, Yahoo Finance). The last line is:
-```
-Done: 42/42 TCPD series, 35/35 SKAB files in ...\data\raw
-```
-If a series fails, a website was temporarily down. Run the same command again; finished parts are skipped.
-
-*Optional:* the TCPDBench files (about 310 MB) are only needed for the reproduction tests in Step 5:
+**Paths B and C** also fetch the published TCPDBench results (about 310 MB). The reproduction tests in Step 5 and `make_report.py` in Step 9 need them:
 ```bash
 python scripts/download_data.py --tcpdbench
 ```
+**Path A** (demo only) needs just TCPD and SKAB:
+```bash
+python scripts/download_data.py
+```
+Either command downloads TCPD and SKAB into `data/raw/`. It also builds the 10 TCPD series that come from external websites (archive.org, Yahoo Finance). The last line is:
+```
+Done: 42/42 TCPD series, 35/35 SKAB files in C:\projects\p1-tsfm-changepoint\data\raw
+```
+If a series fails, a website was temporarily down. Run the same command again; finished parts are skipped.
+
+> **Offline shortcut (Path A only):** copy the `data/processed/` folder (about 1.5 MB) from the original laptop into the same place in the new project. Then skip Steps 3 and 4.
 
 ---
 
@@ -398,12 +470,12 @@ The `excluded` line lists the 6 TCPD series left out, exactly as in TCPDBench: 5
 
 ---
 
-### Step 5: Run the tests (about 2–15 min, depending on the laptop)
+### Step 5: Run the tests (about 1 min; up to 15 min on a slow laptop)
 
 ```bash
 python -m pytest
 ```
-Expected: **`22 passed`**. Tests that need the optional TCPDBench files show as *skipped* (not failed) if you didn't download them.
+Expected: **`22 passed`**. On Path A (no TCPDBench download), the tests that need those files show as *skipped*, not failed. That is fine.
 
 Among other things, the tests check that:
 - our F1 and covering code gives **exactly** TCPDBench's published scores;
@@ -412,9 +484,21 @@ Among other things, the tests check that:
 
 ---
 
-### Step 6: Classical baselines (Path B only, about 2 h)
+### Step 6: Classical baselines (Path C only, about 2 h)
 
-Each of the 70 series runs with the default settings and the full tuning grid (83 to 501 settings per method). To finish faster, open **4 terminals** (repeat Steps 1 and 2b in each) and run **one** command per terminal:
+Each of the 70 series runs with the default settings and the full tuning grid (83 to 501 settings per method).
+
+The saved results are skipped automatically, so delete them first, or nothing will be recomputed.
+
+🪟 **PowerShell:**
+```powershell
+Remove-Item results\classical\grid*.csv
+```
+🍎🐧 **Terminal:**
+```bash
+rm results/classical/grid*.csv
+```
+To finish faster, open **4 terminals** (repeat Steps 1 and 2b in each) and run **one** command per terminal:
 
 | Terminal | Command |
 |---|---|
@@ -423,11 +507,13 @@ Each of the 70 series runs with the default settings and the full tuning grid (8
 | 3 | `python scripts/run_classical.py 2 4` |
 | 4 | `python scripts/run_classical.py 3 4` |
 
-Results go to `results/classical/grid_0.csv … grid_3.csv`. If a run is interrupted, run the same command again; finished series are skipped. To start completely from scratch, first delete `results/classical/grid*.csv`.
+Results go to `results/classical/grid_0.csv … grid_3.csv`. If a run is interrupted, run the same command again; finished series are skipped.
 
 ---
 
-### Step 7: Foundation-model scores in Google Colab (Path B only, about 1 h 40 min on a free T4 GPU)
+### Step 7: Foundation-model scores in Google Colab (Path C only, about 1 h 40 min on a free T4 GPU)
+
+The notebook skips series whose output files already exist in Drive. Use an empty `P1-tsfm` folder so that everything is recomputed.
 
 **7a. On the laptop**, make the input bundle (with `(.venv)` active):
 ```bash
@@ -454,25 +540,63 @@ This creates `colab_input.zip` (about 1.3 MB) in the project folder.
 
 ---
 
-### Step 8: Turn the TSFM scores into change points (Path B only, about 1 min)
+### Step 8: Turn the TSFM scores into change points (Paths B and C, about 30 s)
 
 ```bash
 python scripts/score_tsfm.py
 ```
-It checks that all 210 Colab files are present, then writes `results/tsfm_cp/grid.csv`.
+It checks that all 210 Colab files are present, then prints:
+```
+chronos2_residual: 70 series x 40 configs
+timesfm25_residual: 70 series x 40 configs
+chronos2_embedding: 70 series x 30 configs
+wrote C:\projects\p1-tsfm-changepoint\results\tsfm_cp\grid.csv
+```
 
 ---
 
-### Step 9: Evaluate everything and build the tables and figures (Path B only, about 2 min)
+### Step 9: Evaluate everything and build the tables and figures (Paths B and C, about 1 min)
 
 ```bash
 python scripts/evaluate.py
 ```
+It prints the summary table, one row per dataset and method, and writes `results/eval/*.csv`.
 ```bash
 python scripts/make_report.py
 ```
-- `evaluate.py` prints the summary table and writes `results/eval/*.csv`.
-- `make_report.py` writes `paper/tables/*.tex` and the figures `figures/fig2_example`, `fig3_f1_boxplot` and `fig4_context_length`, each as `.pdf` and `.png`.
+It writes `paper/tables/*.tex` and the figures `figures/fig2_example`, `fig3_f1_boxplot` and `fig4_context_length` (each as `.pdf` and `.png`), then prints:
+```
+tables: ['datasets.tex', 'main.tex', 'runtime.tex', 'stats.tex', 'tcpdbench.tex']
+figures: ['fig2_example.png', 'fig3_f1_boxplot.png', 'fig4_context_length.png']
+```
+
+---
+
+### Step 9b: Check that the results were reproduced (Paths B and C)
+
+git compares every regenerated file with the saved one:
+```bash
+git status --short
+```
+
+**Path B: expected output, exactly these three lines:**
+```
+ M figures/fig2_example.pdf
+ M figures/fig3_f1_boxplot.pdf
+ M figures/fig4_context_length.pdf
+```
+A PDF stores the time it was created, so these three always show as changed. Nothing else may appear. If any file under `results/` or `paper/tables/` is listed, a number has changed. ✅ **No other lines means every table, CSV and number in the project was reproduced exactly.**
+
+**Path C:** runtimes differ from computer to computer, so the classical grids, `per_series.csv` and the runtime tables will show as changed. Check the accuracy tables instead:
+```bash
+git diff results/eval/table_main.csv results/eval/table_stats.csv results/eval/table_tcpdbench.csv
+```
+The classical methods are deterministic, so their rows should not change. The TSFM rows can differ in the last digits after a new Colab run, because GPU arithmetic is not bit-exact.
+
+To go back to the saved results afterwards:
+```bash
+git checkout -- results figures paper/tables
+```
 
 ---
 
@@ -481,7 +605,8 @@ python scripts/make_report.py
 ```bash
 streamlit run app.py
 ```
-Your browser opens at **http://localhost:8501**. If it doesn't, open that address yourself.
+The terminal prints `Local URL: http://localhost:8501` and your browser opens that page. If it doesn't, open the address yourself.
+- On a new Windows laptop, a **Windows Security / firewall** window may ask whether to allow Python on the network. You can click **Cancel**: the demo only runs on your own computer and works either way.
 - The **first load takes up to about 1–2 minutes** while Python loads its libraries. After that, every click takes 1–5 s.
 - **Start it a few minutes before your presentation.**
 - To stop it, press **Ctrl + C** in the terminal.
@@ -587,7 +712,12 @@ All parameters live in [`configs/`](configs/), so no numbers are hard-coded in t
 
 | Problem | Fix |
 |---|---|
-| `python` or `py` not found (Windows) | Reinstall Python 3.11 with **"Add Python to PATH"** ticked, then open a new terminal. |
+| `python` or `py` not found (Windows) | Reinstall Python 3.11 with **"Add python.exe to PATH"** ticked (Section 7.1), then open a **new** terminal. |
+| `py -3.11`: *"No suitable Python runtime found"* | Python 3.11 isn't installed; another version is. Install 3.11 as in Section 7.1. |
+| `git` is not recognized | Install git (Section 7.2), then open a **new** terminal. |
+| `[WinError 206] The filename or extension is too long` during Step 2 | The project folder's path is too long. Move the project to a short path such as `C:\projects\p1-tsfm-changepoint`, delete `.venv`, and redo Step 2. |
+| `git clone … p1-tsfm.bundle`: *"does not exist"* | Run it in the folder that contains `p1-tsfm.bundle` (Step 0b). |
+| Step 9b lists files under `results/` or `paper/tables/` | A number changed. Run `git diff <that file>` to see it, and check that Steps 3–9 all finished without errors. |
 | *"running scripts is disabled"* when activating | `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`, then activate again (Step 2b). |
 | `ModuleNotFoundError: No module named 'cpd'` | Activate the environment, then run `pip install -e .`. |
 | `streamlit` not found | Activate the environment, then run `pip install -r requirements-local.txt` again. |
@@ -616,6 +746,7 @@ All parameters live in [`configs/`](configs/), so no numbers are hard-coded in t
 | M4 | Scores → change points; evaluation of the TSFM detectors | ✅ Done |
 | M5 | Tables, figures, Wilcoxon tests, robustness checks; results reviewed | ✅ Done |
 | — | Web demo (`app.py`) and terminal demo (`scripts/demo.py`) | ✅ Done |
+| — | From-scratch check (Path B): fresh clone → install → download → 22 tests → every result rebuilt identically | ✅ Passed 2026-10-19 |
 | M6 | Paper in `paper/` (IEEE conference template) | 🟡 Full draft written: every section from the Abstract to the Conclusion. **Still to do:** compile it on Overleaf (Step 12; there's no local LaTeX, so it has never been compiled), fill in the author affiliation, and proof-read. |
 
 **Limitations**

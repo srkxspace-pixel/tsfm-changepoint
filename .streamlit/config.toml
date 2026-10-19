@@ -4,3 +4,6 @@ primaryColor = "#2a78d6"
 
 [browser]
 gatherUsageStats = false
+
+[server]
+showEmailPrompt = false   # a fresh laptop would otherwise stop at an "Email:" prompt on first run
