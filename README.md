@@ -224,6 +224,7 @@ Possible future work: adaptive thresholds instead of a fixed τ, better use of m
 ```
 p1-tsfm-changepoint/
 ├── README.md                      ← this file
+├── LICENSE                        ← MIT (plus TCPDBench's notice for the ported metric code)
 ├── app.py                         ← Streamlit web demo (streamlit run app.py)
 ├── requirements-local.txt         ← Python packages for the laptop (CPU only, pinned)
 ├── requirements-colab.txt         ← packages the Colab notebook installs
@@ -325,7 +326,7 @@ p1-tsfm-changepoint/
 | **B. End-to-end check** | about 20–30 min | 0 → 1 → 2 → 3 → 4 → 5 → 8 → 9 → 9b → 10 | **Use this to check the project on another laptop.** It builds everything from nothing (environment, data, tests) and regenerates every result table and figure from the saved model outputs. Step 9b then proves they came out identical. It skips only the two long compute steps, whose outputs are already saved in `results/`. |
 | **C. Full re-run** | about 4 h, mostly unattended | 0 → 11, all of them | Re-run every experiment, including the 2-hour classical grid (Step 6) and the GPU run in Colab (Step 7) |
 
-Path B was tested from scratch on 2026-10-19: a fresh clone from the bundle, a new environment, a fresh data download, the tests, and a rebuild of every result. Every table and CSV came out byte-for-byte identical.
+Path B was tested from scratch on 2026-10-19: a fresh clone, a new environment, a fresh data download, the tests, and a rebuild of every result. Every table and CSV came out byte-for-byte identical.
 
 ### About the terminals
 
@@ -339,43 +340,39 @@ From Step 1 on, all commands are run **from the project folder**. After Step 2, 
 
 ---
 
-### Step 0: Move the project to the other laptop (about 2 min)
+### Step 0: Get the project from GitHub (about 1 min)
 
-The project is copied as **one file**, a *git bundle* (about 6 MB). The bundle contains:
+The project lives at **https://github.com/srkxspace-pixel/tsfm-changepoint**. Cloning it gets you:
 - all the code;
 - every saved result, including the GPU outputs;
 - the executed Colab notebook;
-- the paper;
-- the full history.
+- the paper.
 
 It leaves out the things each laptop must build for itself: `.venv` and `data/`.
 
-**0a. On the original laptop.** 🪟 PowerShell, in the project folder. The bundle holds only what is committed in git, so check first:
-```powershell
-git status
-```
-It must say `nothing to commit, working tree clean`. If it doesn't, commit your changes first. Then create the bundle:
-```powershell
-git bundle create ..\p1-tsfm.bundle --all
-```
-This writes `p1-tsfm.bundle` into the folder *above* the project folder. Copy that one file to the new laptop by USB stick, Google Drive or email.
-
-**0b. On the new laptop.** 🪟 PowerShell. First make a short folder and go into it:
+🪟 **PowerShell.** First make a short folder and go into it:
 ```powershell
 mkdir C:\projects
 ```
 ```powershell
 cd C:\projects
 ```
-Put `p1-tsfm.bundle` into `C:\projects`, then unpack it:
+Then clone the project:
 ```powershell
-git clone -b master p1-tsfm.bundle p1-tsfm-changepoint
+git clone https://github.com/srkxspace-pixel/tsfm-changepoint.git p1-tsfm-changepoint
 ```
 It prints `Cloning into 'p1-tsfm-changepoint'...`. The project is now in `C:\projects\p1-tsfm-changepoint`.
 
 🍎🐧 On macOS or Linux, the same commands work in Terminal with `~/projects` in place of `C:\projects`.
 
-> **Without git?** You can also copy the project folder itself (USB or zip). Leave out `.venv` and `data/`, and do **not** use a deeply nested folder. Step 9b needs the hidden `.git` folder, so copy that too.
+To get later updates, run `git pull` inside the project folder.
+
+> **No internet on the new laptop?** Move the project as one file, a *git bundle* (about 6 MB).
+> 1. On a laptop that has the project, with a clean `git status`, run `git bundle create ..\p1-tsfm.bundle --all`.
+> 2. Copy `p1-tsfm.bundle` into `C:\projects` on the new laptop.
+> 3. Run `git clone -b main p1-tsfm.bundle p1-tsfm-changepoint`.
+>
+> Steps 2 and 3 of the run guide still need internet, for the packages and the data.
 
 ---
 
@@ -716,7 +713,7 @@ All parameters live in [`configs/`](configs/), so no numbers are hard-coded in t
 | `py -3.11`: *"No suitable Python runtime found"* | Python 3.11 isn't installed; another version is. Install 3.11 as in Section 7.1. |
 | `git` is not recognized | Install git (Section 7.2), then open a **new** terminal. |
 | `[WinError 206] The filename or extension is too long` during Step 2 | The project folder's path is too long. Move the project to a short path such as `C:\projects\p1-tsfm-changepoint`, delete `.venv`, and redo Step 2. |
-| `git clone … p1-tsfm.bundle`: *"does not exist"* | Run it in the folder that contains `p1-tsfm.bundle` (Step 0b). |
+| `git clone … p1-tsfm.bundle`: *"does not exist"* | Run it in the folder that contains `p1-tsfm.bundle` (Step 0, offline option). |
 | Step 9b lists files under `results/` or `paper/tables/` | A number changed. Run `git diff <that file>` to see it, and check that Steps 3–9 all finished without errors. |
 | *"running scripts is disabled"* when activating | `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`, then activate again (Step 2b). |
 | `ModuleNotFoundError: No module named 'cpd'` | Activate the environment, then run `pip install -e .`. |
@@ -775,3 +772,5 @@ All parameters live in [`configs/`](configs/), so no numbers are hard-coded in t
 - **IEEE base paper:** De Ryck, De Vos, Bertrand, *Change Point Detection in Time Series Data Using Autoencoders With a Time-Invariant Representation*, IEEE Trans. Signal Processing 69 (2021), pp. 3513–3524. Discussed, not re-run (its code has no license).
 
 Detailed design decisions are in [docs/DESIGN.md](docs/DESIGN.md), the specifications in [docs/SPECS.md](docs/SPECS.md), and the architecture in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+**License:** the code is released under the MIT License ([LICENSE](LICENSE)). The file also carries TCPDBench's MIT notice for the ported metric code. The datasets are not part of this repository; they are downloaded under their own licenses.
